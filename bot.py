@@ -10,7 +10,6 @@ WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "")
 app = Flask(__name__)
 bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 
-# ইউজারের লিংক সেভ রাখার জন্য ডিকশনারি
 user_data = {}
 
 @app.route("/ping")
@@ -34,7 +33,6 @@ def webhook():
 def start(message):
     bot.reply_to(message, "Hello! YouTube Downloader Bot!\n\nযেকোনো ইউটিউব লিংক দিন, আমি এভেইলেবল ফরম্যাটগুলোর লিস্ট দেখাবো।")
 
-# লিংক রিসিভ করে ফরম্যাট চেক করার ফাংশন
 @bot.message_handler(func=lambda m: True)
 def fetch_formats(message):
     u = re.search(r"(https?://)?(www\.)?(youtube\.com|youtu\.be)/\S+", message.text)
@@ -44,11 +42,12 @@ def fetch_formats(message):
     
     url = u.group(0)
     uid = message.from_user.id
-    user_data[uid] = {"url": url} # ইউজারের লিংক সেভ করে রাখলাম
+    user_data[uid] = {"url": url} 
     
     msg = bot.reply_to(message, "🔍 Checking available formats...")
     
-    opts = {'cookiefile': 'cookies.txt', 'quiet': True}
+    # এখানে 'format': 'b' যুক্ত করা হয়েছে যাতে সে চেকিংয়ের সময় এরর না দেয়
+    opts = {'cookiefile': 'cookies.txt', 'quiet': True, 'format': 'b'}
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -58,7 +57,6 @@ def fetch_formats(message):
         
         added_res = set()
         
-        # ভিডিও ফরম্যাট খোঁজার লুপ (যেগুলোতে অডিও+ভিডিও একসাথে আছে)
         for f in formats:
             if f.get('vcodec') != 'none' and f.get('acodec') != 'none':
                 res = f.get('height', 0)
@@ -66,14 +64,11 @@ def fetch_formats(message):
                     size_bytes = f.get('filesize') or f.get('filesize_approx') or 0
                     size_mb = size_bytes / (1024 * 1024)
                     
-                    # টেলিগ্রামের লিমিট 50MB, তাই 48MB এর বেশি হলে দেখাবো না বা ওয়ার্নিং দিব
                     if size_mb > 0 and size_mb < 48:
                         added_res.add(res)
                         btn_text = f"🎬 {res}p Video - {size_mb:.1f} MB"
-                        # callback_data তে ফরম্যাটের আইডি দিয়ে দিচ্ছি
                         kb.add(InlineKeyboardButton(btn_text, callback_data=f"dl_{f['format_id']}"))
 
-        # অডিও ফরম্যাট খোঁজার লুপ
         for f in formats:
             if f.get('vcodec') == 'none' and f.get('acodec') != 'none' and f.get('ext') == 'm4a':
                 size_bytes = f.get('filesize') or f.get('filesize_approx') or 0
@@ -82,7 +77,7 @@ def fetch_formats(message):
                     btn_text = "🎵 Audio (m4a)"
                     if size_mb > 0: btn_text += f" - {size_mb:.1f} MB"
                     kb.add(InlineKeyboardButton(btn_text, callback_data=f"dl_{f['format_id']}"))
-                    break # শুধু একটি ভালো অডিও ফরম্যাটই যথেষ্ট
+                    break 
         
         if len(kb.keyboard) == 0:
             bot.edit_message_text("Sorry, no suitable format found under 48MB.", message.chat.id, msg.message_id)
@@ -92,7 +87,6 @@ def fetch_formats(message):
     except Exception as e:
         bot.edit_message_text(f"Error fetching formats: {str(e)[:100]}", message.chat.id, msg.message_id)
 
-# বাটনে ক্লিক করলে ডাউনলোডের ফাংশন
 @bot.callback_query_handler(func=lambda call: call.data.startswith("dl_"))
 def download_selected_format(call):
     uid = call.from_user.id
@@ -101,7 +95,7 @@ def download_selected_format(call):
         return
     
     url = user_data[uid]["url"]
-    format_id = call.data.split("_")[1] # "dl_18" থেকে "18" বের করে নিলাম
+    format_id = call.data.split("_")[1] 
     
     bot.edit_message_text("⏳ Downloading... Please wait.", call.message.chat.id, call.message.message_id)
     
