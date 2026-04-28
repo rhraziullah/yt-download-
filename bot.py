@@ -68,7 +68,10 @@ def dl(message):
     msg = bot.reply_to(message, "Downloading...")
     folder = f"/tmp/d_{uuid.uuid4().hex[:6]}"
     os.makedirs(folder, exist_ok=True)
-    opts = {"outtmpl": f"{folder}/%(title).50s.%(ext)s", "quiet": True, "max_downloads": 1}
+    
+    # এখানে কুকিজ অপশন যুক্ত করা হয়েছে
+    opts = {"outtmpl": f"{folder}/%(title).50s.%(ext)s", "quiet": True, "max_downloads": 1, "cookiefile": "cookies.txt"}
+    
     if fmt == "audio":
         opts["format"] = "bestaudio/best"
         opts["postprocessors"] = [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}]
@@ -83,7 +86,7 @@ def dl(message):
             return
         for f in files:
             sz = os.path.getsize(f)
-            if sz > 48_000_000:
+            if sz > 48_000_000: # 48MB লিমিট
                 bot.edit_message_text("File > 48MB!", message.chat.id, msg.message_id)
                 continue
             with open(f, "rb") as file:
@@ -97,7 +100,7 @@ def dl(message):
         bot.edit_message_text(f"Error: {str(e)[:100]}", message.chat.id, msg.message_id)
         shutil.rmtree(folder, ignore_errors=True)
 
-# Webhook Setup (Moved outside of if __name__ block)
+# Webhook Setup
 try:
     bot.remove_webhook()
     bot.set_webhook(url=f"{WEBHOOK_URL}/{BOT_TOKEN}")
