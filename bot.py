@@ -31,7 +31,7 @@ def webhook():
 
 @bot.message_handler(commands=["start"])
 def start(message):
-    bot.reply_to(message, "Hello! YouTube Downloader Bot!\n\nযেকোনো ইউটিউব লিংক দিন, আমি এভেইলেবল ফরম্যাটগুলোর লিস্ট দেখাবো।", reply_markup=telebot.types.ReplyKeyboardRemove(selective=True))
+    bot.reply_to(message, "Hello! YouTube Downloader Bot!\n\nযেকোনো ইউটিউব লিংক দিন, আমি এভেইলেবল ফরম্যাটগুলোর লিস্ট দেখাবো।")
 
 def fetch_formats(message):
     u = re.search(r"(https?://(www\.)?youtube\.com|youtu\.be)\S+", message.text)
@@ -48,6 +48,7 @@ def fetch_formats(message):
     try:
         opts = {
             'quiet': True,
+            'cookiefile': 'cookies.txt',
             'extractor_args': {'youtube': {'skip': ['dash', 'hls']}},
         }
         with yt_dlp.YoutubeDL(opts) as ydl:
@@ -55,7 +56,6 @@ def fetch_formats(message):
 
         formats = info.get('formats', [])
         kb = InlineKeyboardMarkup(row_width=1)
-
         added_res = set()
 
         for f in formats:
@@ -79,7 +79,7 @@ def fetch_formats(message):
                 break
 
         if len(kb.keyboard) == 0:
-            bot.edit_message_text("Sorry, no suitable format found above 40MB.", message.chat.id, msg.message_id)
+            bot.edit_message_text("Sorry, no suitable format found.", message.chat.id, msg.message_id)
         else:
             bot.edit_message_text("📥 Select a format to download:", message.chat.id, msg.message_id, reply_markup=kb)
 
@@ -105,6 +105,7 @@ def download_selected_format(call):
         "format": format_id,
         "outtmpl": f"{folder}/%(title)s.%(ext)s",
         "quiet": True,
+        "cookiefile": "cookies.txt",
         "max_downloads": 1,
     }
 
@@ -119,11 +120,8 @@ def download_selected_format(call):
 
         for f in files:
             with open(f, 'rb') as file:
-                if f.endswith(".mp4") or f.endswith(".mp3"):
-                    if f.endswith(".mp4"):
-                        bot.send_video(call.message.chat.id, file)
-                    else:
-                        bot.send_audio(call.message.chat.id, file)
+                if f.endswith(".mp3"):
+                    bot.send_audio(call.message.chat.id, file)
                 else:
                     bot.send_video(call.message.chat.id, file)
 
@@ -137,10 +135,6 @@ def download_selected_format(call):
 @bot.message_handler(func=lambda m: True)
 def handle_message(m):
     fetch_formats(m)
-
-# Webhook Setup
-def remove_webhook():
-    bot.remove_webhook()
 
 try:
     bot.remove_webhook()
