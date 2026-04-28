@@ -5,8 +5,8 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import yt_dlp
 
 logging.basicConfig(level=logging.INFO)
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
-WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8675861880:AAHNrKLqwQ3IG7wtIjVEc4yneZtMnATvjAw")
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "https://jilapi.onrender.com")
 app = Flask(__name__)
 bot = telebot.TeleBot(BOT_TOKEN, threaded=False)
 user_settings = {}
