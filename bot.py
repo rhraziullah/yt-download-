@@ -97,7 +97,12 @@ def dl(message):
         bot.edit_message_text(f"Error: {str(e)[:100]}", message.chat.id, msg.message_id)
         shutil.rmtree(folder, ignore_errors=True)
 
-if __name__ == "__main__":
+# Webhook Setup (Moved outside of if __name__ block)
+try:
     bot.remove_webhook()
     bot.set_webhook(url=f"{WEBHOOK_URL}/{BOT_TOKEN}")
+except Exception as e:
+    print(f"Webhook setup failed: {e}")
+
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
